@@ -1,6 +1,5 @@
-﻿using System;
-using Akinator.Api.Net.Enumerations;
-using Akinator.Api.Net.Model;
+﻿using Akinator.Api.Net.Model;
+using System;
 
 namespace Akinator.Api.Net.Utils
 {
@@ -36,6 +35,11 @@ namespace Akinator.Api.Net.Utils
 
             var url = $"{server.ServerUrl}/answer?session={request.Session}&signature={request.Signature}&step={request.Step}&answer={(int)request.Choice}";
             return url;
+        }
+
+        public static string Exclusion(string session, string signature, int step, IAkinatorServer server)
+        {
+            return $"{server.ServerUrl}/exclusion?session={session}&signature={signature}&step={step}&forward_answer=1";
         }
 
         public static string UndoAnswer(

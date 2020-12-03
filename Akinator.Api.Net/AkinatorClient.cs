@@ -107,6 +107,33 @@ namespace Akinator.Api.Net
             return ToAkinatorQuestion(result.Parameters);
         }
 
+        public async Task<AkinatorQuestion> ExclusionGame(CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (m_step == 0)
+            {
+                return null;
+            }
+
+            var url = AkiUrlBuilder.Exclusion(m_session, m_signature, m_step, m_server);
+
+            var response = await m_webClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+            var result = JsonConvert.DeserializeObject<BaseResponse<Question>>(content,
+                new JsonSerializerSettings
+                {
+                    MissingMemberHandling = MissingMemberHandling.Ignore
+                });
+
+            m_step = result.Parameters.Step;
+            CurrentQuestion = ToAkinatorQuestion(result.Parameters);
+            return ToAkinatorQuestion(result.Parameters);
+        }
+
+
+
         public async Task<AkinatorGuess[]> SearchCharacter(string search, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();

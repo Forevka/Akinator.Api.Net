@@ -1,8 +1,6 @@
 ﻿using Akinator.Api.Net.Enumerations;
 using Akinator.Api.Net.Model;
-using Akinator.Api.Net.Model.External;
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 

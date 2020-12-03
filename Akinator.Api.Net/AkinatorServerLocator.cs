@@ -44,13 +44,37 @@ namespace Akinator.Api.Net
         {
             await EnsureServersAsync(cancellationToken).ConfigureAwait(false);
 
-            var serversMatchingCritera = m_cachedServers
+            var serversMatchingCriteria = m_cachedServers
                 .Where(p =>
                     p.Server.ServerType == serverType &&
                     p.Server.Language == language)
                 .ToList();
 
-            return await GetHealthyServersAsync(serversMatchingCritera);
+            return await GetHealthyServersAsync(serversMatchingCriteria);
+        }
+
+        public async Task<IAkinatorServer> SearchByBaseAsync(string serverBase, CancellationToken cancellationToken = default)
+        {
+            await EnsureServersAsync(cancellationToken).ConfigureAwait(false);
+
+            var serversMatchingCriteria = m_cachedServers
+                .Where(p => p.Server.BaseId == serverBase)
+                .ToList();
+
+            return await GetHealthyServersAsync(serversMatchingCriteria);
+        }
+
+        public async Task<IAkinatorServer> SearchAsync(
+            Language language,
+            CancellationToken cancellationToken = default)
+        {
+            await EnsureServersAsync(cancellationToken).ConfigureAwait(false);
+
+            var serversMatchingCriteria = m_cachedServers
+                .Where(p => p.Server.Language == language)
+                .ToList();
+
+            return await GetHealthyServersAsync(serversMatchingCriteria);
         }
 
         public async Task<IEnumerable<IAkinatorServer>> SearchAllAsync(
