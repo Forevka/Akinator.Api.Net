@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;;netstandard1.4</TargetFrameworks>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <Title>Akinator API .NET</Title>
     <Description>Akinator Api for .NET</Description>
     <Authors>janniksam</Authors>
