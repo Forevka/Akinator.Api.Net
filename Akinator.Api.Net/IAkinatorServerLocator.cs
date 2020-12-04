@@ -7,8 +7,9 @@ namespace Akinator.Api.Net
 {
     public interface IAkinatorServerLocator
     {
+        Task<IAkinatorServer> SearchAsync(Language language, CancellationToken cancellationToken = default);
         Task<IAkinatorServer> SearchAsync(Language language, ServerType serverType, CancellationToken cancellationToken = default);
-        
+        Task<IAkinatorServer> SearchByBaseAsync(string serverBase, CancellationToken cancellationToken = default);
         Task<IEnumerable<IAkinatorServer>> SearchAllAsync(Language language, CancellationToken cancellationToken = default);
     }
 }
