@@ -1,15 +1,17 @@
+using Akinator.Api.Net.Enumerations;
+using Akinator.Api.Net.Exceptions;
+using Akinator.Api.Net.Model;
+using Akinator.Api.Net.Model.External;
+using Akinator.Api.Net.Utils;
+using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Akinator.Api.Net.Enumerations;
-using Akinator.Api.Net.Model;
-using Akinator.Api.Net.Model.External;
-using Akinator.Api.Net.Utils;
-using Newtonsoft.Json;
-using System.Collections.Generic;
+using TimeoutException = Akinator.Api.Net.Exceptions.TimeoutException;
 
 namespace Akinator.Api.Net
 {
@@ -33,6 +35,23 @@ namespace Akinator.Api.Net
             Attach(existingSession);
         }
 
+        private static TParameter EnsureNoError<TParameter>(string url, string content) where TParameter : IBaseParameters
+        {
+            var baseResponse = JsonConvert.DeserializeObject<BaseResponse>(content);
+
+            if (baseResponse.Completion == CompletionType.TimeOut)
+                throw new TimeoutException(url, content);
+
+            if (baseResponse.Completion != CompletionType.Ok)
+                throw new AkinatorBaseException(url, content);
+
+            return baseResponse.DeserializeParameters<TParameter>(
+                new JsonSerializerSettings
+                {
+                    MissingMemberHandling = MissingMemberHandling.Ignore
+                });
+        }
+
         public async Task<AkinatorQuestion> StartNewGame(CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -49,17 +68,13 @@ namespace Akinator.Api.Net
                 throw new InvalidCastException($"Invalid result received from Akinator. Result was {response}");
             }
 
-            var result = JsonConvert.DeserializeObject<BaseResponse<NewGameParameters>>(match.Groups[1].Value,
-                new JsonSerializerSettings
-                {
-                    MissingMemberHandling = MissingMemberHandling.Ignore
-                });
+            var result = EnsureNoError<NewGameParameters>(url, match.Groups[1].Value);
 
-            _mSession = result.Parameters.Identification.Session;
-            _mSignature = result.Parameters.Identification.Signature;
-            _mStep = result.Parameters.StepInformation.Step;
-            CurrentQuestion = ToAkinatorQuestion(result.Parameters.StepInformation);
-            return ToAkinatorQuestion(result.Parameters.StepInformation);
+            _mSession = result.Identification.Session;
+            _mSignature = result.Identification.Signature;
+            _mStep = result.StepInformation.Step;
+            CurrentQuestion = ToAkinatorQuestion(result.StepInformation);
+            return ToAkinatorQuestion(result.StepInformation);
         }
 
         public async Task<AkinatorQuestion> Answer(AnswerOptions answer, CancellationToken cancellationToken = default)
@@ -71,15 +86,11 @@ namespace Akinator.Api.Net
             var response = await _mWebClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-            var result = JsonConvert.DeserializeObject<BaseResponse<Question>>(content,
-                new JsonSerializerSettings
-                {
-                    MissingMemberHandling = MissingMemberHandling.Ignore
-                });
+            var result = EnsureNoError<Question>(url, content);
 
-            _mStep = result.Parameters.Step;
-            CurrentQuestion = ToAkinatorQuestion(result.Parameters);
-            return ToAkinatorQuestion(result.Parameters);
+            _mStep = result.Step;
+            CurrentQuestion = ToAkinatorQuestion(result);
+            return ToAkinatorQuestion(result);
         }
 
         public async Task<AkinatorQuestion> UndoAnswer(CancellationToken cancellationToken = default)
@@ -96,15 +107,11 @@ namespace Akinator.Api.Net
             var response = await _mWebClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-            var result = JsonConvert.DeserializeObject<BaseResponse<Question>>(content,
-                new JsonSerializerSettings
-                {
-                    MissingMemberHandling = MissingMemberHandling.Ignore
-                });
+            var result = EnsureNoError<Question>(url, content);
 
-            _mStep = result.Parameters.Step;
-            CurrentQuestion = ToAkinatorQuestion(result.Parameters);
-            return ToAkinatorQuestion(result.Parameters);
+            _mStep = result.Step;
+            CurrentQuestion = ToAkinatorQuestion(result);
+            return ToAkinatorQuestion(result);
         }
 
         public async Task<AkinatorQuestion> ExclusionGame(CancellationToken cancellationToken = default)
@@ -121,15 +128,11 @@ namespace Akinator.Api.Net
             var response = await _mWebClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-            var result = JsonConvert.DeserializeObject<BaseResponse<Question>>(content,
-                new JsonSerializerSettings
-                {
-                    MissingMemberHandling = MissingMemberHandling.Ignore
-                });
+            var result = EnsureNoError<Question>(url, content);
 
-            _mStep = result.Parameters.Step;
-            CurrentQuestion = ToAkinatorQuestion(result.Parameters);
-            return ToAkinatorQuestion(result.Parameters);
+            _mStep = result.Step;
+            CurrentQuestion = ToAkinatorQuestion(result);
+            return ToAkinatorQuestion(result);
         }
 
 
@@ -143,13 +146,9 @@ namespace Akinator.Api.Net
             var response = await _mWebClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-            var result = JsonConvert.DeserializeObject<BaseResponse<Characters>>(content,
-                new JsonSerializerSettings()
-                {
-                    MissingMemberHandling = MissingMemberHandling.Ignore
-                });
+            var result = EnsureNoError<Characters>(url, content);
 
-            return result.Parameters.AllCharacters.Select(p =>
+            return result.AllCharacters.Select(p =>
                 new AkinatorGuess(p.Name, p.Description)
                 {
                     ID = p.IdBase,
@@ -178,15 +177,11 @@ namespace Akinator.Api.Net
             var response = await _mWebClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-            var result = JsonConvert.DeserializeObject<BaseResponse<Guess>>(content,
-                new JsonSerializerSettings
-                {
-                    MissingMemberHandling = MissingMemberHandling.Ignore
-                });
+            var result = EnsureNoError<Guess>(url, content);
 
             _mLastGuessStep = _mStep;
 
-            return result.Parameters.Characters.Select(p =>
+            return result.Characters.Select(p =>
                 new AkinatorGuess(p.Name, p.Description)
                 {
                     ID = p.Id,
