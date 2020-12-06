@@ -4,7 +4,6 @@ using Akinator.Api.Net.Model;
 using Akinator.Api.Net.Model.External;
 using Akinator.Api.Net.Utils;
 using Newtonsoft.Json;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -65,7 +64,7 @@ namespace Akinator.Api.Net
             var match = _mRegexStartGameResult.Match(content);
             if (!match.Success && match.Groups.Count != 2)
             {
-                throw new InvalidCastException($"Invalid result received from Akinator. Result was {response}");
+                throw new ApiErrorException(url, content, "Invalid response while creating new game");
             }
 
             var result = EnsureNoError<NewGameParameters>(url, match.Groups[1].Value);
@@ -195,17 +194,17 @@ namespace Akinator.Api.Net
 
         private async Task<ApiKey> GetSession(CancellationToken cancellationToken)
         {
-            var response = await _mWebClient.GetAsync("https://en.akinator.com/game", cancellationToken).ConfigureAwait(false);
+            var response = await _mWebClient.GetAsync("https://ru.akinator.com/game", cancellationToken).ConfigureAwait(false);
             if (response?.StatusCode != HttpStatusCode.OK)
             {
-                throw new InvalidOperationException("Cannot connect to Akinator.com");
+                throw new ApiErrorException("https://ru.akinator.com/game", "", "Cannot connect to Akinator.com");
             }
 
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             var match = _mRegexSession.Match(content);
             if (!match.Success)
             {
-                throw new InvalidOperationException("Cannot retrieve the Api-Key from Akinator.com");
+                throw new ApiErrorException("https://ru.akinator.com/game", content,"Cannot retrieve the Api-Key from Akinator.com");
             }
 
             var apiKey = new ApiKey
@@ -243,13 +242,12 @@ namespace Akinator.Api.Net
 
         private void Attach(AkinatorUserSession existingSession)
         {
-            if (existingSession != null)
-            {
-                _mStep = existingSession.Step;
-                _mLastGuessStep = existingSession.LastGuessStep;
-                _mSession = existingSession.Session;
-                _mSignature = existingSession.Signature;
-            }
+            if (existingSession == null) return;
+
+            _mStep = existingSession.Step;
+            _mLastGuessStep = existingSession.LastGuessStep;
+            _mSession = existingSession.Session;
+            _mSignature = existingSession.Signature;
         }
 
         public void Dispose()
