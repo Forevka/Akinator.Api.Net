@@ -5,6 +5,7 @@ namespace Akinator.Api.Net.Utils
 {
     internal static class AkiUrlBuilder
     {
+        private static DateTime _startTime = new DateTime(1970, 1, 1);
         public static string NewGame(ApiKey apiKey, IAkinatorServer server, bool childMode)
         {
             var childSwitch = string.Empty;
@@ -16,7 +17,7 @@ namespace Akinator.Api.Net.Utils
             }
             
             return
-                $"https://en.akinator.com/new_session?callback=jQuery3410014644797238627216_{GetTime()}&urlApiWs={Uri.EscapeDataString(server.ServerUrl)}&player=website-desktop&&partner=1&uid_ext_session={apiKey.SessionUid}&frontaddr={apiKey.FrontAdress.UrlEncode()}&childMod={childSwitch}&constraint={Uri.EscapeDataString("ETAT<>'AV'")}&soft_constraint=&question_filter={questionFilter}&_={GetTime()}";
+                $"https://ru.akinator.com/new_session?callback=jQuery3410014644797238627216_{GetTime()}&urlApiWs={Uri.EscapeDataString(server.ServerUrl)}&player=website-desktop&&partner=1&uid_ext_session={apiKey.SessionUid}&frontaddr={apiKey.FrontAdress.UrlEncode()}&childMod={childSwitch}&constraint={Uri.EscapeDataString("ETAT<>'AV'")}&soft_constraint=&question_filter={questionFilter}&_={GetTime()}";
         }
 
         public static string MapHallOfFame(IAkinatorServer server)
@@ -48,8 +49,7 @@ namespace Akinator.Api.Net.Utils
             int step,
             IAkinatorServer server)
         {
-            var url = $"{server.ServerUrl}/cancel_answer?session={session}&signature={signature}&step={step}&answer=-1";
-            return url;
+            return $"{server.ServerUrl}/cancel_answer?session={session}&signature={signature}&step={step}&answer=-1";
         }
         
         public static string SearchCharacter(
@@ -59,9 +59,7 @@ namespace Akinator.Api.Net.Utils
             int step,
             IAkinatorServer server)
         {
-            var str = search.UrlEncode();
-            var url = $"{server.ServerUrl}/soundlike_search?session={session}&signature={signature}&step={step}&name={str}";
-            return url;
+            return $"{server.ServerUrl}/soundlike_search?session={session}&signature={signature}&step={step}&name={search.UrlEncode()}";
         }
 
         public static string GetGuessUrl(
@@ -73,16 +71,12 @@ namespace Akinator.Api.Net.Utils
                 throw new ArgumentNullException(nameof(request));
             }
 
-            var url = $"{server.ServerUrl}/list?session={request.Session}&signature={request.Signature}&step={request.Step}";
-            return url;
+            return $"{server.ServerUrl}/list?session={request.Session}&signature={request.Signature}&step={request.Step}";
         }
 
         private static long GetTime()
         {
-            var st = new DateTime(1970, 1, 1);
-            var t = (DateTime.Now.ToUniversalTime() - st);
-            var retval = (long)(t.TotalMilliseconds + 0.5);
-            return retval;
+            return (long)((DateTime.Now.ToUniversalTime() - _startTime).TotalMilliseconds + 0.5);
         }
     }
 }

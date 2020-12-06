@@ -15,21 +15,21 @@ namespace Akinator.Api.Net
 {
     public class AkinatorClient : IAkinatorClient
     {
-        private readonly Regex m_regexSession = new Regex("var uid_ext_session = '(.*)'\\;\\n.*var frontaddr = '(.*)'\\;");
-        private readonly Regex m_regexStartGameResult = new Regex(@"^jQuery3410014644797238627216_\d+\((.+)\)$");
-        private readonly AkiWebClient m_webClient;
-        private readonly IAkinatorServer m_server;
-        private readonly bool m_childMode;
-        private string m_session;
-        private string m_signature;
-        private int m_step;
-        private int m_lastGuessStep;
+        private readonly Regex _mRegexSession = new Regex("var uid_ext_session = '(.*)'\\;\\n.*var frontaddr = '(.*)'\\;");
+        private readonly Regex _mRegexStartGameResult = new Regex(@"^jQuery3410014644797238627216_\d+\((.+)\)$");
+        private readonly AkiWebClient _mWebClient;
+        private readonly IAkinatorServer _mServer;
+        private readonly bool _mChildMode;
+        private string _mSession;
+        private string _mSignature;
+        private int _mStep;
+        private int _mLastGuessStep;
 
         public AkinatorClient(IAkinatorServer server, AkinatorUserSession existingSession = null, bool childMode = false)
         {
-            m_webClient = new AkiWebClient();
-            m_server = server;
-            m_childMode = childMode;
+            _mWebClient = new AkiWebClient();
+            _mServer = server;
+            _mChildMode = childMode;
             Attach(existingSession);
         }
 
@@ -39,11 +39,11 @@ namespace Akinator.Api.Net
 
             var apiKey = await GetSession(cancellationToken).ConfigureAwait(false);
             
-            var url = AkiUrlBuilder.NewGame(apiKey, m_server, m_childMode);
-            var response = await m_webClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
+            var url = AkiUrlBuilder.NewGame(apiKey, _mServer, _mChildMode);
+            var response = await _mWebClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-            var match = m_regexStartGameResult.Match(content);
+            var match = _mRegexStartGameResult.Match(content);
             if (!match.Success && match.Groups.Count != 2)
             {
                 throw new InvalidCastException($"Invalid result received from Akinator. Result was {response}");
@@ -55,9 +55,9 @@ namespace Akinator.Api.Net
                     MissingMemberHandling = MissingMemberHandling.Ignore
                 });
 
-            m_session = result.Parameters.Identification.Session;
-            m_signature = result.Parameters.Identification.Signature;
-            m_step = result.Parameters.StepInformation.Step;
+            _mSession = result.Parameters.Identification.Session;
+            _mSignature = result.Parameters.Identification.Signature;
+            _mStep = result.Parameters.StepInformation.Step;
             CurrentQuestion = ToAkinatorQuestion(result.Parameters.StepInformation);
             return ToAkinatorQuestion(result.Parameters.StepInformation);
         }
@@ -66,9 +66,9 @@ namespace Akinator.Api.Net
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var url = AkiUrlBuilder.Answer(BuildAnswerRequest(answer), m_server);
+            var url = AkiUrlBuilder.Answer(BuildAnswerRequest(answer), _mServer);
 
-            var response = await m_webClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
+            var response = await _mWebClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
             var result = JsonConvert.DeserializeObject<BaseResponse<Question>>(content,
@@ -77,7 +77,7 @@ namespace Akinator.Api.Net
                     MissingMemberHandling = MissingMemberHandling.Ignore
                 });
 
-            m_step = result.Parameters.Step;
+            _mStep = result.Parameters.Step;
             CurrentQuestion = ToAkinatorQuestion(result.Parameters);
             return ToAkinatorQuestion(result.Parameters);
         }
@@ -86,14 +86,14 @@ namespace Akinator.Api.Net
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (m_step == 0)
+            if (_mStep == 0)
             {
                 return null;
             }
 
-            var url = AkiUrlBuilder.UndoAnswer(m_session, m_signature, m_step, m_server);
+            var url = AkiUrlBuilder.UndoAnswer(_mSession, _mSignature, _mStep, _mServer);
 
-            var response = await m_webClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
+            var response = await _mWebClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
             var result = JsonConvert.DeserializeObject<BaseResponse<Question>>(content,
@@ -102,7 +102,7 @@ namespace Akinator.Api.Net
                     MissingMemberHandling = MissingMemberHandling.Ignore
                 });
 
-            m_step = result.Parameters.Step;
+            _mStep = result.Parameters.Step;
             CurrentQuestion = ToAkinatorQuestion(result.Parameters);
             return ToAkinatorQuestion(result.Parameters);
         }
@@ -111,14 +111,14 @@ namespace Akinator.Api.Net
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (m_step == 0)
+            if (_mStep == 0)
             {
                 return null;
             }
 
-            var url = AkiUrlBuilder.Exclusion(m_session, m_signature, m_step, m_server);
+            var url = AkiUrlBuilder.Exclusion(_mSession, _mSignature, _mStep, _mServer);
 
-            var response = await m_webClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
+            var response = await _mWebClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
             var result = JsonConvert.DeserializeObject<BaseResponse<Question>>(content,
@@ -127,7 +127,7 @@ namespace Akinator.Api.Net
                     MissingMemberHandling = MissingMemberHandling.Ignore
                 });
 
-            m_step = result.Parameters.Step;
+            _mStep = result.Parameters.Step;
             CurrentQuestion = ToAkinatorQuestion(result.Parameters);
             return ToAkinatorQuestion(result.Parameters);
         }
@@ -138,9 +138,9 @@ namespace Akinator.Api.Net
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var url = AkiUrlBuilder.SearchCharacter(search, m_session, m_signature, m_step, m_server);
+            var url = AkiUrlBuilder.SearchCharacter(search, _mSession, _mSignature, _mStep, _mServer);
 
-            var response = await m_webClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
+            var response = await _mWebClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
             var result = JsonConvert.DeserializeObject<BaseResponse<Characters>>(content,
@@ -163,8 +163,8 @@ namespace Akinator.Api.Net
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var hallOfFameRequestUrl = AkiUrlBuilder.MapHallOfFame(m_server);
-            var response = await m_webClient.GetAsync(hallOfFameRequestUrl, cancellationToken).ConfigureAwait(false);
+            var hallOfFameRequestUrl = AkiUrlBuilder.MapHallOfFame(_mServer);
+            var response = await _mWebClient.GetAsync(hallOfFameRequestUrl, cancellationToken).ConfigureAwait(false);
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             var data = XmlConverter.ToClass<HallOfFame>(content);
             return ToHallOfFameEntry(data.Awards.Award);
@@ -174,8 +174,8 @@ namespace Akinator.Api.Net
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var url = AkiUrlBuilder.GetGuessUrl(BuildGuessRequest(), m_server);
-            var response = await m_webClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
+            var url = AkiUrlBuilder.GetGuessUrl(BuildGuessRequest(), _mServer);
+            var response = await _mWebClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
             var result = JsonConvert.DeserializeObject<BaseResponse<Guess>>(content,
@@ -184,7 +184,7 @@ namespace Akinator.Api.Net
                     MissingMemberHandling = MissingMemberHandling.Ignore
                 });
 
-            m_lastGuessStep = m_step;
+            _mLastGuessStep = _mStep;
 
             return result.Parameters.Characters.Select(p =>
                 new AkinatorGuess(p.Name, p.Description)
@@ -196,18 +196,18 @@ namespace Akinator.Api.Net
         }
 
         public bool GuessIsDue(Platform platform = Platform.Android) =>
-            GuessDueChecker.GuessIsDue(CurrentQuestion, m_lastGuessStep, platform);
+            GuessDueChecker.GuessIsDue(CurrentQuestion, _mLastGuessStep, platform);
 
         private async Task<ApiKey> GetSession(CancellationToken cancellationToken)
         {
-            var response = await m_webClient.GetAsync("https://en.akinator.com/game", cancellationToken).ConfigureAwait(false);
+            var response = await _mWebClient.GetAsync("https://en.akinator.com/game", cancellationToken).ConfigureAwait(false);
             if (response?.StatusCode != HttpStatusCode.OK)
             {
                 throw new InvalidOperationException("Cannot connect to Akinator.com");
             }
 
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-            var match = m_regexSession.Match(content);
+            var match = _mRegexSession.Match(content);
             if (!match.Success)
             {
                 throw new InvalidOperationException("Cannot retrieve the Api-Key from Akinator.com");
@@ -223,7 +223,7 @@ namespace Akinator.Api.Net
         }
 
         public AkinatorUserSession GetUserSession() =>
-            new AkinatorUserSession(m_session, m_signature, m_step, m_lastGuessStep);
+            new AkinatorUserSession(_mSession, _mSignature, _mStep, _mLastGuessStep);
 
         private static AkinatorQuestion ToAkinatorQuestion(Question question) =>
             new AkinatorQuestion(question.Text, question.Progression, question.Step);
@@ -241,25 +241,25 @@ namespace Akinator.Api.Net
                 .ToArray();
 
         private GuessRequest BuildGuessRequest() =>
-            new GuessRequest(m_step, m_session, m_signature);
+            new GuessRequest(_mStep, _mSession, _mSignature);
 
         private AnswerRequest BuildAnswerRequest(AnswerOptions choice) =>
-            new AnswerRequest(choice, m_step, m_session, m_signature);
+            new AnswerRequest(choice, _mStep, _mSession, _mSignature);
 
         private void Attach(AkinatorUserSession existingSession)
         {
             if (existingSession != null)
             {
-                m_step = existingSession.Step;
-                m_lastGuessStep = existingSession.LastGuessStep;
-                m_session = existingSession.Session;
-                m_signature = existingSession.Signature;
+                _mStep = existingSession.Step;
+                _mLastGuessStep = existingSession.LastGuessStep;
+                _mSession = existingSession.Session;
+                _mSignature = existingSession.Signature;
             }
         }
 
         public void Dispose()
         {
-            m_webClient?.Dispose();
+            _mWebClient?.Dispose();
         }
     }
 }

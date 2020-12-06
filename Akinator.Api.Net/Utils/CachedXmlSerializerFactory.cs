@@ -6,15 +6,15 @@ namespace Akinator.Api.Net.Utils
 {
     public static class CachedXmlSerializerFactory
     {
-        private static readonly object m_syncRootCache = new object();
-        private static readonly Dictionary<Type, XmlSerializer> m_cache = new Dictionary<Type, XmlSerializer>();
+        private static readonly object MSyncRootCache = new object();
+        private static readonly Dictionary<Type, XmlSerializer> MCache = new Dictionary<Type, XmlSerializer>();
         
         public static XmlSerializer Create(Type type)
         {
             XmlSerializer serializer;
-            lock (m_syncRootCache)
+            lock (MSyncRootCache)
             {
-                if (m_cache.TryGetValue(type, out serializer))
+                if (MCache.TryGetValue(type, out serializer))
                 {
                     return serializer;
                 }
@@ -23,9 +23,9 @@ namespace Akinator.Api.Net.Utils
             {
                 serializer = XmlSerializer.FromTypes(new[] { type })[0];
             }
-            lock (m_syncRootCache)
+            lock (MSyncRootCache)
             {
-                m_cache[type] = serializer;
+                MCache[type] = serializer;
             }
 
             return serializer;

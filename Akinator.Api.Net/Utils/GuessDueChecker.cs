@@ -44,7 +44,7 @@ namespace Akinator.Api.Net.Utils
 
                         return 80 - currentQuestion.Step > 5;
                     }
-                case Platform.Android_Modified:
+                case Platform.AndroidModified:
                     {
                         var step = currentQuestion.Step;
                         var variance = step - lastGuessTakenAtStep;
@@ -73,7 +73,7 @@ namespace Akinator.Api.Net.Utils
                         }
                         return false;
                     }
-                case Platform.Windows_Phone:
+                case Platform.WindowsPhone:
                     {
                         return currentQuestion.Step >= 79 || (currentQuestion.Step - lastGuessTakenAtStep >= 5 && (currentQuestion.Progression >= 97f || currentQuestion.Step - lastGuessTakenAtStep == 25) && currentQuestion.Step != 75);
                     }

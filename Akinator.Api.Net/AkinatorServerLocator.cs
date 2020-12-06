@@ -28,13 +28,13 @@ namespace Akinator.Api.Net
         private const string ServerListUrl =
             "https://global3.akinator.com/ws/instances_v2.php?media_id=14&footprint=cd8e6509f3420878e18d75b9831b317f&mode=https";
 
-        private static readonly SemaphoreSlim m_semaphoreSlim = new SemaphoreSlim(1, 1);
-        private readonly AkiWebClient m_webClient;
-        private ICollection<ServerCache> m_cachedServers;
+        private static readonly SemaphoreSlim MSemaphoreSlim = new SemaphoreSlim(1, 1);
+        private readonly AkiWebClient _mWebClient;
+        private ICollection<ServerCache> _mCachedServers;
 
         public AkinatorServerLocator()
         {
-            m_webClient = new AkiWebClient();
+            _mWebClient = new AkiWebClient();
         }
 
         public async Task<IAkinatorServer> SearchAsync(
@@ -44,7 +44,7 @@ namespace Akinator.Api.Net
         {
             await EnsureServersAsync(cancellationToken).ConfigureAwait(false);
 
-            var serversMatchingCriteria = m_cachedServers
+            var serversMatchingCriteria = _mCachedServers
                 .Where(p =>
                     p.Server.ServerType == serverType &&
                     p.Server.Language == language)
@@ -57,7 +57,7 @@ namespace Akinator.Api.Net
         {
             await EnsureServersAsync(cancellationToken).ConfigureAwait(false);
 
-            var serversMatchingCriteria = m_cachedServers
+            var serversMatchingCriteria = _mCachedServers
                 .Where(p => p.Server.BaseId == serverBase)
                 .ToList();
 
@@ -70,7 +70,7 @@ namespace Akinator.Api.Net
         {
             await EnsureServersAsync(cancellationToken).ConfigureAwait(false);
 
-            var serversMatchingCriteria = m_cachedServers
+            var serversMatchingCriteria = _mCachedServers
                 .Where(p => p.Server.Language == language)
                 .ToList();
 
@@ -84,7 +84,6 @@ namespace Akinator.Api.Net
             await EnsureServersAsync(cancellationToken).ConfigureAwait(false);
             var serverTypes = Enum.GetValues(typeof(ServerType)).Cast<ServerType>();
 
-#if NETSTANDARD2_0
             var serverBag = new ConcurrentBag<IAkinatorServer>();
             var tasks = serverTypes.AsParallel().Select(async serverType =>
             {
@@ -97,33 +96,21 @@ namespace Akinator.Api.Net
             
             await Task.WhenAll(tasks);
             return serverBag.OrderBy(p => p.ServerType).ToArray();
-#else
-            var servers = new List<IAkinatorServer>();
-            foreach (var serverType in serverTypes)
-            {
-                var healthyServer = await SearchAsync(language, serverType, cancellationToken).ConfigureAwait(false);
-                if (healthyServer != null)
-                {
-                    servers.Add(healthyServer);
-                }
-            }
-            return servers.OrderBy(p => p.ServerType).ToArray();
-#endif
         }
 
         private async Task EnsureServersAsync(CancellationToken cancellationToken)
         {
-            await m_semaphoreSlim.WaitAsync(cancellationToken);
+            await MSemaphoreSlim.WaitAsync(cancellationToken);
             try
             {
-                if (m_cachedServers == null)
+                if (_mCachedServers == null)
                 {
-                    m_cachedServers = await LoadServersAsync(cancellationToken).ConfigureAwait(false);
+                    _mCachedServers = await LoadServersAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
             finally
             {
-                m_semaphoreSlim.Release();
+                MSemaphoreSlim.Release();
             }
         }
 
@@ -142,7 +129,7 @@ namespace Akinator.Api.Net
                     return server.Server;
                 }
 
-                m_cachedServers.Remove(server);
+                _mCachedServers.Remove(server);
             }
 
             return null;
@@ -150,7 +137,7 @@ namespace Akinator.Api.Net
         
         private async Task<ICollection<ServerCache>> LoadServersAsync(CancellationToken cancellationToken)
         {
-            var response = await m_webClient.GetAsync(ServerListUrl, cancellationToken).ConfigureAwait(false);
+            var response = await _mWebClient.GetAsync(ServerListUrl, cancellationToken).ConfigureAwait(false);
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             var serverListRaw = XmlConverter.ToClass<ServerSearchResult>(content);
             return MapToServerListAsync(serverListRaw)
@@ -190,7 +177,7 @@ namespace Akinator.Api.Net
 
         private async Task<bool> CheckHealth(string serverUrl)
         {
-            var result = await m_webClient.GetAsync($"{serverUrl}/answer").ConfigureAwait(false);
+            var result = await _mWebClient.GetAsync($"{serverUrl}/answer").ConfigureAwait(false);
             return result.StatusCode == HttpStatusCode.OK;
         }
 
@@ -226,7 +213,7 @@ namespace Akinator.Api.Net
             }
         }
 
-        private static Language MapLanguage(string languageCode)
+        public static Language MapLanguage(string languageCode)
         {
             switch (languageCode)
             {
