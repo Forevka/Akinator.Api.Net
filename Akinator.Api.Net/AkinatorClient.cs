@@ -10,7 +10,6 @@ using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using TimeoutException = Akinator.Api.Net.Exceptions.TimeoutException;
 
 namespace Akinator.Api.Net
 {
@@ -39,7 +38,7 @@ namespace Akinator.Api.Net
             var baseResponse = JsonConvert.DeserializeObject<BaseResponse>(content);
 
             if (baseResponse.Completion == CompletionType.TimeOut)
-                throw new TimeoutException(url, content);
+                throw new AkinatorTimeoutException(url, content);
 
             if (baseResponse.Completion != CompletionType.Ok)
                 throw new AkinatorBaseException(url, content);
