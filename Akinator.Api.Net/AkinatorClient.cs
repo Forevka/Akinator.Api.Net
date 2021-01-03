@@ -19,15 +19,18 @@ namespace Akinator.Api.Net
         private readonly Regex _mRegexStartGameResult = new Regex(@"^jQuery3410014644797238627216_\d+\((.+)\)$");
         private readonly AkiWebClient _mWebClient;
         private readonly IAkinatorServer _mServer;
+        private readonly IAkinatorLogger _logger;
         private readonly bool _mChildMode;
         private string _mSession;
         private string _mSignature;
         private int _mStep;
         private int _mLastGuessStep;
 
-        public AkinatorClient(IAkinatorServer server, AkinatorUserSession existingSession = null, bool childMode = false)
+        public AkinatorClient(IAkinatorServer server, IAkinatorLogger logger, AkinatorUserSession existingSession = null, bool childMode = false)
         {
-            _mWebClient = new AkiWebClient();
+            _logger = logger;
+
+            _mWebClient = new AkiWebClient(_logger);
             _mServer = server;
             _mChildMode = childMode;
             Attach(existingSession);
@@ -52,6 +55,8 @@ namespace Akinator.Api.Net
 
         public async Task<AkinatorQuestion> StartNewGame(CancellationToken cancellationToken = default)
         {
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+
             cancellationToken.ThrowIfCancellationRequested();
 
             var apiKey = await GetSession(cancellationToken).ConfigureAwait(false);
@@ -72,11 +77,18 @@ namespace Akinator.Api.Net
             _mSignature = result.Identification.Signature;
             _mStep = result.StepInformation.Step;
             CurrentQuestion = ToAkinatorQuestion(result.StepInformation);
-            return ToAkinatorQuestion(result.StepInformation);
+
+            watch.Stop();
+
+            await _logger.Information($"[Akinator.Api] Start new game took {watch.ElapsedMilliseconds} ms.");
+
+            return CurrentQuestion;
         }
 
         public async Task<AkinatorQuestion> Answer(AnswerOptions answer, CancellationToken cancellationToken = default)
         {
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+
             cancellationToken.ThrowIfCancellationRequested();
 
             var url = AkiUrlBuilder.Answer(BuildAnswerRequest(answer), _mServer);
@@ -88,11 +100,16 @@ namespace Akinator.Api.Net
 
             _mStep = result.Step;
             CurrentQuestion = ToAkinatorQuestion(result);
-            return ToAkinatorQuestion(result);
+            watch.Stop();
+
+            await _logger.Information($"[Akinator.Api] Answer took {watch.ElapsedMilliseconds} ms.");
+            return CurrentQuestion;
         }
 
         public async Task<AkinatorQuestion> UndoAnswer(CancellationToken cancellationToken = default)
         {
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+
             cancellationToken.ThrowIfCancellationRequested();
 
             if (_mStep == 0)
@@ -109,11 +126,16 @@ namespace Akinator.Api.Net
 
             _mStep = result.Step;
             CurrentQuestion = ToAkinatorQuestion(result);
-            return ToAkinatorQuestion(result);
+            watch.Stop();
+
+            await _logger.Information($"[Akinator.Api] Undo answer took {watch.ElapsedMilliseconds} ms.");
+            return CurrentQuestion;
         }
 
         public async Task<AkinatorQuestion> ExclusionGame(CancellationToken cancellationToken = default)
         {
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+
             cancellationToken.ThrowIfCancellationRequested();
 
             if (_mStep == 0)
@@ -130,13 +152,18 @@ namespace Akinator.Api.Net
 
             _mStep = result.Step;
             CurrentQuestion = ToAkinatorQuestion(result);
-            return ToAkinatorQuestion(result);
+            watch.Stop();
+
+            await _logger.Information($"[Akinator.Api] Exclusion game took {watch.ElapsedMilliseconds} ms.");
+            return CurrentQuestion;
         }
 
 
 
         public async Task<AkinatorGuess[]> SearchCharacter(string search, CancellationToken cancellationToken = default)
         {
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+
             cancellationToken.ThrowIfCancellationRequested();
 
             var url = AkiUrlBuilder.SearchCharacter(search, _mSession, _mSignature, _mStep, _mServer);
@@ -145,6 +172,10 @@ namespace Akinator.Api.Net
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
             var result = EnsureNoError<Characters>(url, content);
+
+            watch.Stop();
+
+            await _logger.Information($"[Akinator.Api] Search character took {watch.ElapsedMilliseconds} ms.");
 
             return result.AllCharacters.Select(p =>
                 new AkinatorGuess(p.Name, p.Description)
@@ -169,6 +200,8 @@ namespace Akinator.Api.Net
 
         public async Task<AkinatorGuess[]> GetGuess(CancellationToken cancellationToken = default)
         {
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+
             cancellationToken.ThrowIfCancellationRequested();
 
             var url = AkiUrlBuilder.GetGuessUrl(BuildGuessRequest(), _mServer);
@@ -178,6 +211,9 @@ namespace Akinator.Api.Net
             var result = EnsureNoError<Guess>(url, content);
 
             _mLastGuessStep = _mStep;
+            watch.Stop();
+
+            await _logger.Information($"[Akinator.Api] Guess took {watch.ElapsedMilliseconds} ms.");
 
             return result.Characters.Select(p =>
                 new AkinatorGuess(p.Name, p.Description)
@@ -193,6 +229,8 @@ namespace Akinator.Api.Net
 
         private async Task<ApiKey> GetSession(CancellationToken cancellationToken)
         {
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+
             var response = await _mWebClient.GetAsync("https://ru.akinator.com/game", cancellationToken).ConfigureAwait(false);
             if (response?.StatusCode != HttpStatusCode.OK)
             {
@@ -211,6 +249,9 @@ namespace Akinator.Api.Net
                 SessionUid = match.Groups[1].Value,
                 FrontAdress = match.Groups[2].Value
             };
+            watch.Stop();
+
+            await _logger.Information($"[Akinator.Api] Get session took {watch.ElapsedMilliseconds} ms.");
 
             return apiKey;
         }

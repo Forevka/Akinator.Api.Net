@@ -7,10 +7,12 @@ namespace Akinator.Api.Net.Utils
 {
     public class AkiWebClient : IDisposable
     {
+        private readonly IAkinatorLogger _logger;
         private readonly HttpClient _mWebClient;
 
-        public AkiWebClient()
+        public AkiWebClient(IAkinatorLogger logger)
         {
+            _logger = logger;
             _mWebClient = new HttpClient(new HttpClientHandler
             {
                 UseCookies = false
@@ -26,9 +28,17 @@ namespace Akinator.Api.Net.Utils
             _mWebClient.DefaultRequestHeaders.Add("Referer", "https://en.akinator.com/game");
         }
 
-        public Task<HttpResponseMessage> GetAsync(string url, CancellationToken cancellationToken = default)
+        public async Task<HttpResponseMessage> GetAsync(string url, CancellationToken cancellationToken = default)
         {
-            return _mWebClient.GetAsync(url, cancellationToken);
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+
+            var res = await _mWebClient.GetAsync(url, cancellationToken);
+
+            watch.Stop();
+
+            await _logger.Information($"[Akinator.Api] Request to {url} took {watch.ElapsedMilliseconds} ms.");
+
+            return res;
         }
 
         public void Dispose()

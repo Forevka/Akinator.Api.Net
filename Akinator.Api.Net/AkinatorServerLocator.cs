@@ -1,13 +1,13 @@
-﻿using System;
+﻿using Akinator.Api.Net.Enumerations;
+using Akinator.Api.Net.Model.External;
+using Akinator.Api.Net.Utils;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using Akinator.Api.Net.Enumerations;
-using Akinator.Api.Net.Model.External;
-using Akinator.Api.Net.Utils;
 
 namespace Akinator.Api.Net
 {
@@ -32,9 +32,9 @@ namespace Akinator.Api.Net
         private readonly AkiWebClient _mWebClient;
         private ICollection<ServerCache> _mCachedServers;
 
-        public AkinatorServerLocator()
+        public AkinatorServerLocator(IAkinatorLogger logger)
         {
-            _mWebClient = new AkiWebClient();
+            _mWebClient = new AkiWebClient(logger);
         }
 
         public async Task<IAkinatorServer> SearchAsync(
