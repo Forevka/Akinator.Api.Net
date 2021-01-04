@@ -52,6 +52,13 @@ namespace Akinator.Api.Net
         Task<AkinatorHallOfFameEntries[]> GetHallOfFame(CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Game exclusion
+        /// </summary>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        Task<AkinatorQuestion> ExclusionGame(CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Indicates, if Akinator is ready to guess based on a few criterias such as
         /// already answered questions or the probability given by Akinator
         /// </summary>

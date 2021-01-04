@@ -30,15 +30,7 @@ namespace Akinator.Api.Net.Utils
 
         public async Task<HttpResponseMessage> GetAsync(string url, CancellationToken cancellationToken = default)
         {
-            var watch = System.Diagnostics.Stopwatch.StartNew();
-
-            var res = await _mWebClient.GetAsync(url, cancellationToken);
-
-            watch.Stop();
-
-            await _logger.Information($"[Akinator.Api] Request to {url} took {watch.ElapsedMilliseconds} ms.");
-
-            return res;
+            return await _mWebClient.GetAsync(url, cancellationToken);
         }
 
         public void Dispose()
